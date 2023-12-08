@@ -1,24 +1,16 @@
 import sys
-from pathlib import Path
-
-import cv2
 import numpy as np
 import torch
-
 from torch.utils.data import Dataset
-import torchvision
 from torchvision import transforms
-import torchvision.transforms.functional as F
-import os
-import glob
 from PIL import Image
-import re
+
 
 
 class DatasetA2D2(Dataset): 
     def __init__(self, path):
        self.image_paths = path
-       self.transforms = transforms.Compose([transforms.Resize((1208, 1920)),
+       self.transforms = transforms.Compose([transforms.Resize((224, 224)),
                                              transforms.ToTensor()])
    
     
