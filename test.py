@@ -52,18 +52,20 @@ def create_boxes(path_to_org_image,path_to_label, output):
   merged_image = boundary + (mask * image2)
   cv2.imwrite(output, merged_image)
 
-print(A2D2_dataset_train[0]['segmentation'].shape)
 
-model_path = 'seg_only_overfit_lr3.pth'  # Replace with your actual model path
-# model_name = os.path.splitext(os.path.basename(model_path))[0]
+
+model_path = 'seg_only_overfit_lr3.pth'  
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model= UNet()
-# model.to(device=device)
+
+
 model.load_state_dict(torch.load(model_path))
 model.eval()
-imput=A2D2_dataset_train[20]['image'].unsqueeze(0)
+imput_sample=A2D2_dataset_train[20]
+
+imput=imput_sample['image'].unsqueeze(0)
 with torch.no_grad():
     output = model(imput)
     output = F.sigmoid(output)
@@ -80,13 +82,12 @@ output = (output > 0.05).float()
 
 output=reverse_transform(output[0])
 
-input_im=reverse_transform(A2D2_dataset_train[20]['image'])
-ground=reverse_transform(A2D2_dataset_train[20]['segmentation'])
+input_im=reverse_transform(imput_sample['image'])
+ground=reverse_transform(imput_sample['segmentation'])
 
 segmentation_loss =  nn.BCELoss()
 
-# print(segmentation_loss(output,A2D2_dataset_train[6]['segmentation'].unsqueeze(0)))
-# cv2.imwrite('test.png', output_np)
+
 output.save('threshold_2.png')
 input_im.save('input.png')
 ground.save('gt.png')
