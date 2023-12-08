@@ -1,28 +1,12 @@
 import sys
-from pathlib import Path
 from tqdm import tqdm
-
-import numpy as np
-# import pandas as pd
 import torch
-from torch.nn import L1Loss, MSELoss, HuberLoss
-from torch.utils.data import ConcatDataset, RandomSampler, WeightedRandomSampler
-
-from torch.utils.data import Dataset, random_split, DataLoader,ConcatDataset
-import torchvision
-from torchvision import transforms
-import torchvision.transforms.functional as F
-import torchvision.models as models
-# from skimage.util import random_noise
+from torch.utils.data import DataLoader
 import glob
-from dataset import DatasetA2D2
-
-import random
 import torch
 import torch.nn as nn
-from collections import OrderedDict
-from torchvision.models import resnet34
-import cv2
+
+from dataset import DatasetA2D2
 from UNet import UNet
 torch.manual_seed(0)
 
@@ -60,7 +44,7 @@ val_dataloader = DataLoader(A2D2_dataset_val, batch_size=BATCH_SIZE, shuffle=Fal
 
 model = UNet()
 model.to(device=device)
-segmentation_loss =  nn.BCEWithLogitsLoss()
+loss =  nn.BCEWithLogitsLoss()
 
 lr = 1e-5
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -78,28 +62,25 @@ for epoch in range(n_epochs):
 
     for i, data in enumerate( tqdm(train_dataloader, desc=f'Epoch {epoch + 1}/{n_epochs}')):
      
-        
+        #Loading input and labesls to device
         inputs = data["image"].to(device=device) 
         segmentation_label = data["segmentation"].to(device=device)
 
-
-        
 
         #Output
         optimizer.zero_grad()
         segmentation_output = model(inputs)
 
-
         # Loss calculation
-        segmentation_loss_value = segmentation_loss(segmentation_output, segmentation_label)
+        segmentation_loss = loss(segmentation_output, segmentation_label)
 
         #Backward
-        segmentation_loss_value.backward()
+        segmentation_loss.backward()
         optimizer.step()
-        
+
         #Logging        
-        total_training_loss += segmentation_loss_value
-        wandb.log({'Train Loss': segmentation_loss_value})
+        total_training_loss += segmentation_loss
+        wandb.log({'Train Loss': segmentation_loss})
         
 
     avgTrainLoss = total_training_loss / len(train_dataloader.dataset)
@@ -118,22 +99,22 @@ for epoch in range(n_epochs):
             segmentation_label = data["segmentation"].to(device=device)
 
             segmentation_output = model(inputs)
-            segmentation_loss_value = segmentation_loss(segmentation_output, segmentation_label)
+            segmentation_loss = segmentation_loss(segmentation_output, segmentation_label)
 
 
             
-            total_validation_loss += segmentation_loss_value.item()
+            total_validation_loss += segmentation_loss.item()
 
     avgValLoss = total_validation_loss / len(val_dataloader)
-
-
-
 
 
     print('Epoch [{}/{}]\n'
           'Train Loss: {:.5f} | Train Segmentation Loss: {:.5f}\n'
           'Validation Loss: {:.5f}  | Validation Segmentation Loss: {:.5f}'
           .format(epoch + 1, n_epochs, avgTrainLoss, avgValLoss))
+    wandb.log({'Average Train Loss' : avgTrainLoss,
+               'Average Validation Loss ': avgValLoss})
+    
     if avgValLoss<best_val_loss:
         best_val=model
         best_val_loss=avgValLoss
