@@ -23,19 +23,17 @@ import torch.nn as nn
 from collections import OrderedDict
 from torchvision.models import resnet34
 import cv2
-# from models.first_hydra import HydraNet
 from UNet import UNet
-# import wandb
-#RSync
-#Sbatch
 torch.manual_seed(0)
+
+# import wandb
 # wandb.init(project="ITS")
 
 
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 
-TRAIN_SPLIT = 0.04
-VAL_SPLIT = 0.01
+TRAIN_SPLIT = 0.8
+VAL_SPLIT = 0.2
 
 A2D2_path_all=sorted(glob.glob("./Dataset/camera_lidar_semantic/2018*/camera/cam_front_center/*.png"))
 
@@ -51,8 +49,7 @@ A2D2_dataset_val=DatasetA2D2(A2D2_path_val)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-print(device)
-
+print("Used calculation device: ",device)
 
 
 print('No of train samples', len(A2D2_dataset_train)*BATCH_SIZE )
@@ -67,19 +64,15 @@ val_dataloader = DataLoader(A2D2_dataset_val, batch_size=BATCH_SIZE, shuffle=Fal
 
 model = UNet()
 model.to(device=device)
-segmentation_loss =  nn.BCEWithLogitsLoss() #nn.CrossEntropyLoss(reduction='none')  #nn.MSELoss()#nn.BCELoss()#nn.CrossEntropyLoss()  #1 
-
-
+segmentation_loss =  nn.BCEWithLogitsLoss()
 
 
 lr = 1e-5
-# # momentum = 0.9  
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 n_epochs=5
 
 best_val_loss=999999
-
 
 for epoch in range(n_epochs):
     
@@ -90,7 +83,7 @@ for epoch in range(n_epochs):
     training_segmentation_loss = 0
 
     for i, data in enumerate( tqdm(train_dataloader, desc=f'Epoch {epoch + 1}/{n_epochs}')):
-        # model.train()        
+     
         
         inputs = data["image"].to(device=device) 
         segmentation_label = data["segmentation"].to(device=device)
@@ -110,8 +103,7 @@ for epoch in range(n_epochs):
         segmentation_loss_value.backward()
         optimizer.step()
         
-        #Logging
-        
+        #Logging        
         training_segmentation_loss += segmentation_loss_value
         
 
@@ -151,9 +143,8 @@ for epoch in range(n_epochs):
                    avgValSegmentationLoss))
     if avgValLoss<best_val_loss:
         best_val=model
-        torch.save(best_val.state_dict(), "seg_only.pth")
+        torch.save(best_val.state_dict(), "model_state.pth")
 
-    
-# torch.save(best_val.state_dict(), "multi_channel.pth")
+
 
 
