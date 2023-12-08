@@ -10,7 +10,7 @@ from PIL import Image
 class DatasetA2D2(Dataset): 
     def __init__(self, path):
        self.image_paths = path
-       self.transforms = transforms.Compose([transforms.Resize((224, 224)),
+       self.transforms = transforms.Compose([transforms.Resize((1208, 1920)),
                                              transforms.ToTensor()])
    
     
