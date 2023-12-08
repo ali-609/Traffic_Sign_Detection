@@ -27,7 +27,7 @@ from UNet import UNet
 torch.manual_seed(0)
 
 import wandb
-wandb.init(project="local_test")
+wandb.init(project="local")
 
 
 BATCH_SIZE = 3
